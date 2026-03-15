@@ -1,0 +1,26 @@
+inputs:
+  gcc_version:
+    type: string
+    description: GCC version to package
+    default: "14"
+  build_number:
+    type: string
+    description: Build number for the archive name
+    default: "0"
+
+pipeline:
+  - step: CreateVEnv
+    module: pypeline.steps.create_venv
+    config:
+      package_manager: uv>=0
+      python_version: 3.11
+  - step: PoksInstall
+    module: pypeline.steps.poks_install
+  - step: PackageStep
+    module: gcc_portable.steps
+    config:
+      output_dir: build/dist
+  - step: TestStep
+    module: gcc_portable.steps
+    config:
+      output_dir: build/dist

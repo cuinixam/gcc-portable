@@ -1,0 +1,15 @@
+{
+  "buckets": [
+    {
+      "name": "poks-bucket",
+      "url": "https://github.com/cuinixam/poks-bucket.git"
+    }
+  ],
+  "apps": [
+    {
+      "name": "micromamba",
+      "version": "2.4.0-1",
+      "bucket": "poks-bucket"
+    }
+  ]
+}

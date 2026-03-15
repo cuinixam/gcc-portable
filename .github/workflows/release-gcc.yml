@@ -1,0 +1,68 @@
+name: Release GCC Portable
+
+on:
+  workflow_dispatch:
+    inputs:
+      gcc_version:
+        description: "GCC version to package"
+        required: true
+        default: "14"
+      build_number:
+        description: "Build number (leave empty to use GitHub run number)"
+        required: false
+        default: ""
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            arch: arm64
+          - os: macos-15-intel
+            arch: x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pypeline-runner
+        run: pip install pypeline-runner>=1.27
+        shell: bash
+
+      - name: Create venv
+        run: pypeline run --config-file deploy_pypeline.yaml --step CreateVEnv
+        shell: bash
+
+      - name: Run deploy pipeline
+        run: .venv/bin/pypeline run --config-file deploy_pypeline.yaml --input gcc_version=${{ github.event.inputs.gcc_version }} --input build_number=${{ github.event.inputs.build_number || github.run_number }}
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcc-${{ github.event.inputs.gcc_version }}-${{ github.event.inputs.build_number || github.run_number }}-darwin-${{ matrix.arch }}
+          path: "build/dist/*.tar.gz"
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: gcc-${{ github.event.inputs.gcc_version }}-${{ github.event.inputs.build_number || github.run_number }}
+          name: GCC ${{ github.event.inputs.gcc_version }} Portable
+          files: dist/*.tar.gz
+          generate_release_notes: true
